@@ -28,7 +28,7 @@ def parseoneLEPfile(filename):#(path,filename):
         waferid=os.path.basename(filename)
         df=pd.read_fwf(filename) #讀取檔案，存在名為df的變數中
         srs=df[list(df.columns)[0]]  #取出df的資料存為series
-        df_waferid=pd.DataFrame({'LOT_slot':[waferid]})
+        df_waferid=pd.DataFrame({'LOT_slot':waferid})
         
         recipe_raw=[i for i in srs if i.find('"Recipe Name:",')!=-1] #找到recipe name
         recipe_raw=recipe_raw[0]
