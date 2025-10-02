@@ -103,7 +103,7 @@ def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
             tmp.write(uf.read())
             tmp_path = tmp.name
 
-        st.write(f"{idx}/{len(files)} :: {os.path.basename(uf.name)}")
+        st.write(f"{os.path.basename(uf.name)}")
         TorF, df_temp = parseoneLEPfile(tmp_path)
 
         # Clean up the temp file ASAP
