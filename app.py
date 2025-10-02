@@ -83,8 +83,8 @@ def parseoneLEPfile(filename):#(path,filename):
     except:
         return False,''
 
-st.set_page_config(page_title="LEP CSV Parser", layout="centered")
-st.title("LEP CSV Parser (Streamlit)")
+st.set_page_config(page_title="LEP Parser", layout="centered")
+st.title("LEP Parser")
 st.caption("Select one or more *.csv files, then click **Parse** to generate lep.csv")
 
 uploaded_files = st.file_uploader(
