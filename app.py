@@ -137,13 +137,13 @@ if parse_clicked:
         if df_summary.empty:
             st.error("Parsing failed. Please check your files.")
         else:
-            st.success("Done! Preview and download below.")
+            st.success("Done. Preview and download below.")
             st.dataframe(df_summary, use_container_width=True)
 
             # Offer a download of lep.csv (same filename as your PyQt flow)
             csv_bytes = df_summary.to_csv(index=False).encode("utf-8")
             st.download_button(
-                label="Download lep.csv",
+                label="Download",
                 data=csv_bytes,
                 file_name="lep.csv",
                 mime="text/csv",
