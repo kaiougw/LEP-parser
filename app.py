@@ -83,75 +83,72 @@ def parseoneLEPfile(filename):#(path,filename):
     except:
         return False,''
 
-st.set_page_config(page_title="LEP Parser", layout="wide")
+st.set_page_config(page_title="LEP CSV Parser", layout="centered")
+st.title("LEP CSV Parser (Streamlit)")
+st.caption("Select one or more *.csv files, then click **Parse** to generate lep.csv")
 
-uploaded = st.file_uploader(
-    "Upload LEP files",
-    type=["csv", "CSV"],
-    accept_multiple_files=True,
+uploaded_files = st.file_uploader(
+    "Choose CSV files", type=["csv"], accept_multiple_files=True
 )
 
-if uploaded:
+parse_clicked = st.button("Parse")
+
+import tempfile
+from typing import List
+import io
+
+def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
     results = []
-    errors = []
-    progress = st.progress(0, text="Parsing files...")
-    for i, f in enumerate(uploaded, start=1):
-        ok, payload = parseoneLEPfile(f, f.name)
-        if ok:
-            results.append(payload)
-        else:
-            errors.append(payload)  # payload is error message
-        progress.progress(i / len(uploaded), text=f"Parsed {i}/{len(uploaded)}")
+    for idx, uf in enumerate(files, start=1):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+            tmp.write(uf.read())
+            tmp_path = tmp.name
 
-    if results:
-        df_summary = pd.concat(results, ignore_index=True)
+        st.write(f"{idx}/{len(files)} :: {os.path.basename(uf.name)}")
+        TorF, df_temp = parseoneLEPfile(tmp_path)
 
-        # Try to convert columns to numeric where possible
-        for col in df_summary.columns:
-            df_summary[col] = pd.to_numeric(df_summary[col], errors="ignore")
+        # Clean up the temp file ASAP
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
 
-        st.success(f"Parsed {len(results)} file(s).")
-        if errors:
-            with st.expander("Show warnings/errors"):
-                for e in errors:
-                    st.warning(e)
+        if TorF and isinstance(df_temp, pd.DataFrame):
+            results.append(df_temp)
 
-        st.dataframe(df_summary, use_container_width=True)
+    if not results:
+        return pd.DataFrame()
 
-        # Download buttons
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_csv_name = f"lep_{ts}.csv"
-        out_xlsx_name = f"lep_{ts}.xlsx"
+    df_summary = pd.concat(results, ignore_index=True)
 
-        csv_bytes = df_summary.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            "Download CSV",
-            data=csv_bytes,
-            file_name=out_csv_name,
-            mime="text/csv",
-        )
+    # Convert each column to numeric where possible; keep text as-is otherwise
+    for col in df_summary.columns:
+        df_summary[col] = pd.to_numeric(df_summary[col], errors="ignore")
 
-        # Excel
-        xlsx_io = io.BytesIO()
-        with pd.ExcelWriter(xlsx_io, engine="xlsxwriter") as writer:
-            df_summary.to_excel(writer, index=False, sheet_name="sheet1")
-        st.download_button(
-            "Download Excel",
-            data=xlsx_io.getvalue(),
-            file_name=out_xlsx_name,
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
+    return df_summary
 
+
+if parse_clicked:
+    if not uploaded_files:
+        st.warning("Please upload at least one CSV file.")
     else:
-        st.error("No valid files parsed.")
-        if uploaded and errors:
-            with st.expander("Show errors"):
-                for e in errors:
-                    st.error(e)
+        with st.spinner("Parsing..."):
+            df_summary = process_files(uploaded_files)
 
-else:
-    st.info("Upload one or more .csv files.")
+        if df_summary.empty:
+            st.error("Parsing failed. Please check your files.")
+        else:
+            st.success("Done! Preview and download below.")
+            st.dataframe(df_summary, use_container_width=True)
+
+            # Offer a download of lep.csv (same filename as your PyQt flow)
+            csv_bytes = df_summary.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="Download lep.csv",
+                data=csv_bytes,
+                file_name="lep.csv",
+                mime="text/csv",
+            )
 
 
     
-
