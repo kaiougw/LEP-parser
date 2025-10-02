@@ -86,9 +86,7 @@ def parseoneLEPfile(filename):#(path,filename):
 st.set_page_config(page_title="LEP Parser", layout="centered")
 st.title("LEP Parser")
 
-uploaded_files = st.file_uploader(
-    "Choose CSV files (.csv)", type=["csv"], accept_multiple_files=True
-)
+uploaded_files = st.file_uploader("Choose CSV files (.csv)", type=["csv"], accept_multiple_files=True)
 
 parse_clicked = st.button("Parse")
 
@@ -106,7 +104,7 @@ def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
         st.write(f"{os.path.basename(uf.name)}")
         TorF, df_temp = parseoneLEPfile(tmp_path)
 
-        # Clean up the temp file ASAP
+        # Clean up temp file
         try:
             os.remove(tmp_path)
         except Exception:
@@ -140,7 +138,6 @@ if parse_clicked:
             st.success("Done. Preview and download below.")
             st.dataframe(df_summary, use_container_width=True)
 
-            # Offer a download of lep.csv (same filename as your PyQt flow)
             csv_bytes = df_summary.to_csv(index=False).encode("utf-8")
             st.download_button(
                 label="Download",
@@ -148,6 +145,8 @@ if parse_clicked:
                 file_name="lep.csv",
                 mime="text/csv",
             )
+
+            st.info("Please check the output file in the data folder.")
 
 
     
