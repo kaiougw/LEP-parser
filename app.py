@@ -87,7 +87,7 @@ st.set_page_config(page_title="LEP Parser", layout="centered")
 st.title("LEP Parser")
 
 uploaded_files = st.file_uploader(
-    "Choose CSV files", type=["csv"], accept_multiple_files=True
+    "Choose CSV files (.csv)", type=["csv"], accept_multiple_files=True
 )
 
 parse_clicked = st.button("Parse")
