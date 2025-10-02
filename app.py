@@ -135,7 +135,7 @@ if parse_clicked:
         if df_summary.empty:
             st.error("Parsing failed. Please check your files.")
         else:
-            st.success("Done. Preview and download below.")
+            st.success("Done parsing. Pleaes preview and download below.")
             st.dataframe(df_summary, use_container_width=True)
 
             csv_bytes = df_summary.to_csv(index=False).encode("utf-8")
