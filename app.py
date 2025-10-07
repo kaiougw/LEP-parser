@@ -102,7 +102,7 @@ def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
             tmp_path = tmp.name
 
         st.write(f"{os.path.basename(uf.name)}")
-        TorF, df_temp = lep.parseoneLEPfile(tmp_path)
+        TorF, df_temp = parseoneLEPfile(tmp_path)
 
         os.remove(temp_path)
 
