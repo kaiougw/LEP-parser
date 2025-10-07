@@ -104,7 +104,7 @@ def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
         st.write(f"{os.path.basename(uf.name)}")
         TorF, df_temp = lep.parseoneLEPfile(tmp_path)
 
-        os.remove(temp_path
+        os.remove(temp_path)
 
         if TorF and isinstance(df_temp, pd.DataFrame):
             original_name = os.path.basename(uf.name)
