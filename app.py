@@ -137,11 +137,11 @@ if parse_clicked:
             st.dataframe(df_summary, use_container_width=True)
 
             csv_bytes = df_summary.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="Download",
-                data=csv_bytes,
-                file_name="lep.csv",
-                mime="text/csv",
-            )
+            save_dir = st.text_input("Enter folder path to save output (server side):", "data")
+            if st.button("Save to folder"):
+                os.makedirs(save_dir, exist_ok=True)
+                output_path = os.path.join(save_dir, "lep.csv")
+                df_summary.to_csv(output_path, index=False)
+                st.success(f"Saved lep.csv to {os.path.abspath(output_path)}")
 
             st.caption("The file will be downloaded in the data folder.")
