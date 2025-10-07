@@ -102,15 +102,13 @@ def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
             tmp_path = tmp.name
 
         st.write(f"{os.path.basename(uf.name)}")
-        TorF, df_temp = parseoneLEPfile(tmp_path)
+        TorF, df_temp = lep.parseoneLEPfile(tmp_path)
 
-        # Clean up temp file
-        try:
-            os.remove(tmp_path)
-        except Exception:
-            pass
+        os.remove(temp_path
 
         if TorF and isinstance(df_temp, pd.DataFrame):
+            original_name = os.path.basename(uf.name)
+            df_temp["LOT_slot"] = original_name
             results.append(df_temp)
 
     if not results:
