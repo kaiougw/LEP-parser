@@ -11,6 +11,9 @@ import glob
 import subprocess
 from subprocess import Popen
 import streamlit as st
+import tempfile
+from typing import List
+import io
 
 #name_of_wb='LEP_'+datetime.now().strftime('%Y%m%d_%H%M%S')+'.csv'
 #dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -90,9 +93,6 @@ uploaded_files = st.file_uploader("Choose CSV files (.csv)", type=["csv"], accep
 
 parse_clicked = st.button("Parse")
 
-import tempfile
-from typing import List
-import io
 
 def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
     """
