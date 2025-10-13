@@ -95,20 +95,26 @@ from typing import List
 import io
 
 def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
+    """
+    Inputs:
+        List of uploaded file-like objects
+    Output:
+        DataFrame with parsed results
+    """
     results = []
     for idx, uf in enumerate(files, start=1):
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
-            tmp.write(uf.read())
-            tmp_path = tmp.name
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp: # delete=False to prevent immediate deletion
+            tmp.write(uf.read()) # save uploaded file content to temp file
+            tmp_path = tmp.name 
 
-        st.write(f"{os.path.basename(uf.name)}")
+        st.write(f"{os.path.basename(uf.name)}") # display file name
         TorF, df_temp = parseoneLEPfile(tmp_path)
 
         os.remove(tmp_path)
 
-        if TorF and isinstance(df_temp, pd.DataFrame):
+        if TorF and isinstance(df_temp, pd.DataFrame): # proceed if parsing was successful (TorF=True) and df_temp is a DataFrame
             original_name = os.path.basename(uf.name)
-            df_temp["LOT_slot"] = original_name
+            df_temp["LOT_slot"] = original_name # new column with original file name
             results.append(df_temp)
 
     if not results:
@@ -131,7 +137,7 @@ if parse_clicked:
             df_summary = process_files(uploaded_files)
 
         if df_summary.empty:
-            st.error("Parsing failed. Please check your files.")
+            st.error("Parsing failed. Please check the files.")
         else:
             st.success("Done parsing. Pleaes preview and download below.")
             st.dataframe(df_summary, use_container_width=True)
@@ -144,4 +150,4 @@ if parse_clicked:
                 mime="text/csv",
             )
 
-            st.caption("The file will be downloaded in the Downloads folder.")
+            st.caption("The file will be downloaded in the download folder.")
