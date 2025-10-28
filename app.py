@@ -31,7 +31,7 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
     try:
         waferid = os.path.basename(filename)
         df = pd.read_fwf(filename)  # 讀取檔案，存在名為df的變數中
-        srs = df[list(df.columns)[0]]  # 取出df的資料存為series
+        srs = df[list(df.columns)[0]]  # 取出df的資料存為series; dataframe of first column
         df_waferid = pd.DataFrame({'LOT_slot': [waferid]})
 
         # Recipe
@@ -40,68 +40,90 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
             recipe = ""
         else:
             recipe_raw = recipe_matches[0]
-            recipe = recipe_raw[recipe_raw.index(',') + 1:].strip() # 找到,所在的index; 
+            recipe = recipe_raw[recipe_raw.index(',') + 1:].strip() # 找到,所在的index; find the first comma, +1 move after the comma, and .strip() remove the leading and trailing whitespace
             recipe = recipe.strip('"') # 去除"的字樣
         df_recipe = pd.DataFrame({'Recipe': [recipe]}) # 將recipe資訊存成dataframe
 
         # Diameter
-        dia_index = srs.index[srs == '"Dia","DiaB"'] + 1  # 找到"Dia","DiaB"於series中的index number，將index number+1即為資料欄位
-        diameter = list(srs[dia_index])[0][:list(srs[dia_index])[0].find(',')]  # 找到","於string中的index number
-        df_diameter = pd.DataFrame({'Diameter': [diameter]})  # 將diameter完整資訊存成dataframe
+        df_diameter = pd.DataFrame({'Diameter': [None]})
+        try:
+            dia_index = srs.index[srs == '"Dia","DiaB"'][0] + 1 # 找到"Dia","DiaB"於series中的index number，將index number+1即為資料欄位
+            diameter_line = srs.iloc[dia_index] 
+            diameter = diameter_line.split(',', 1)[0] # 找到","於string中的index number
+            df_diameter = pd.DataFrame({'Diameter': [diameter]}) # 將diameter完整資訊存成dataframe
+        except Exception:
+            pass
 
-        diamax_index = srs.index[
-                           srs == '"Max, Diff, Dir"'] + 1  # 找到"Dia","DiaB"於series中的index number，將index number+1即為資料欄位
-        dia_max = list(srs[diamax_index])[0][:list(srs[diamax_index])[0].find(',')]  # 找到","於string中的index number
+        # Roundness (if present)
+        df_roundness = pd.DataFrame()
+        try:
+            max_idx = srs.index[srs == '"Max, Diff, Dir"'][0] + 1 # 找到"Dia","DiaB"於series中的index number，將index number+1即為資料欄位
+            min_idx = srs.index[srs == '"Min, Diff, Dir"'][0] + 1 # 找到"Dia","DiaB"於series中的index number，將index number+1即為資料欄位
+            dia_max_line = srs.iloc[max_idx]
+            dia_min_line = srs.iloc[min_idx]
+            dia_max = float(dia_max_line.split(',', 1)[0]) # 找到","於string中的index number
+            dia_min = float(dia_min_line.split(',', 1)[0]) # 找到","於string中的index number
+            roundness = (dia_max - dia_min) * 1000 # calculate roundness
+            df_roundness = pd.DataFrame({'Roundness': [f"{roundness:g}"]})
+        except Exception:
+            pass
 
-        diamin_index = srs.index[
-                           srs == '"Min, Diff, Dir"'] + 1  # 找到"Dia","DiaB"於series中的index number，將index number+1即為資料欄位
-        dia_min = list(srs[diamin_index])[0][:list(srs[diamin_index])[0].find(',')]  # 找到","於string中的index number
+        # Notch
+        df_notch = pd.DataFrame()
+        try:
+            notch_index = srs.index[srs == '"[Notch]"'][0] # 找到"[Notch]"於series中的index number
+            df_notch_block = srs[notch_index + 1:notch_index + 3].str.split(',', expand=True) # 取出notch相關的資訊，目前還是一個series
+            df_notch_block.reset_index(drop=True, inplace=True)
+            df_notch_block.rename(columns=df_notch_block.iloc[0], inplace=True) # 將最上面一個row設為column name
+            df_notch_block = df_notch_block.drop(0).reset_index(drop=True) # 完成後將最上面一row刪除
+            df_notch_block.columns = [c.replace('"', '') for c in df_notch_block.columns] # 因column name中帶有""，不美觀，以下將column中的"符號刪除
+            df_notch = df_notch_block
+        except Exception:
+            pass
 
-        df_roundness = pd.DataFrame(
-            {'Roundness': [str((float(dia_max) - float(dia_min)) * 1000)]})  # 將diameter完整資訊存成dataframe
+        # Bevel (if present)
+        df_bevel = pd.DataFrame()
+        try:
+            bevel_index = srs.index[srs == '"[Bevel]"'][0]
+            df_bevel_block = srs[bevel_index + 1:bevel_index + 3].str.split(',', expand=True)
+            df_bevel_block.reset_index(drop=True, inplace=True)
+            df_bevel_block.rename(columns=df_bevel_block.iloc[0], inplace=True)
+            df_bevel_block = df_bevel_block.drop(0).reset_index(drop=True)
+            df_bevel_block.columns = [c.replace('"', '') for c in df_bevel_block.columns]
+            df_bevel = df_bevel_block
+        except Exception:
+            pass
 
-        # 以下開始處理Notch資訊
-        notch_index = srs.index[srs == '"[Notch]"'].tolist()[0]  # 找到"[Notch]"於series中的index number
-        df_notch = srs[notch_index + 1:notch_index + 3]  # 取出notch相關的資訊，目前還是一個series
-        df_notch = df_notch.str.split(',', expand=True)  # 辨識"," 將資料拆解並存成dataframe
-        df_notch.reset_index(drop=True, inplace=True)
-        df_notch.rename(columns=df_notch.iloc[0], inplace=True)  # 將最上面一個row設為column name
-        df_notch.drop(0, inplace=True)  # 完成後將最上面一row刪除
-        # 因column name中帶有""，不美觀，以下將column中的"符號刪除
-        df_notch_col = list(df_notch.columns)
-        for i in range(len(df_notch.columns)):
-            df_notch_col[i] = df_notch_col[i].replace('"', '')
-        df_notch.columns = df_notch_col
-        df_notch.reset_index(drop=True, inplace=True)  # 在一次reset index, 以便之後要合併dataframe時各dataframe index number一致
+        # Edge
+        df_edge = pd.DataFrame()
+        try:
+            edge_index = srs.index[srs == '"[Edge]"'][0]
+            df_edge_block = srs[edge_index + 1:edge_index + 13].str.split(',', expand=True)
+            df_edge_block.reset_index(drop=True, inplace=True)
+            df_edge_block.rename(columns=df_edge_block.iloc[0], inplace=True)
+            df_edge_block = df_edge_block.drop(0).reset_index(drop=True)
 
-        bevel_index = srs.index[srs == '"[Bevel]"'].tolist()[0]
-        df_bevel = srs[bevel_index + 1:bevel_index + 3]
-        df_bevel = df_bevel.str.split(',', expand=True)
-        df_bevel.reset_index(drop=True, inplace=True)
-        df_bevel.rename(columns=df_bevel.iloc[0], inplace=True)
-        df_bevel.drop(0, inplace=True)
-        df_bevel_col = list(df_bevel.columns)
-        for i in range(len(df_bevel.columns)):
-            df_bevel_col[i] = df_bevel_col[i].replace('"', '')
-        df_bevel.columns = df_bevel_col
-        df_bevel.reset_index(drop=True, inplace=True)
+            df_edge_block.columns = [c.replace('"', '') for c in df_edge_block.columns]
 
-        # 對edge量測參數和數值做一樣的動作(同上)
-        edge_index = srs.index[srs == '"[Edge]"'].tolist()[0]
-        df_edge = srs[edge_index + 1:edge_index + 13]
-        df_edge = df_edge.str.split(',', expand=True)
-        df_edge.reset_index(drop=True, inplace=True)
-        df_edge.rename(columns=df_edge.iloc[0], inplace=True)  # 將最上面一個row設為column name
-        df_edge.drop(0, inplace=True)
-        df_edge_col = list(df_edge.columns)
-        for i in range(len(df_edge.columns)):
-            df_edge_col[i] = df_edge_col[i].replace('"', '')
-        df_edge.columns = df_edge_col
-        df_edge = df_edge[df_edge["Point"] == '"<Ave>"']
-        df_edge = df_edge.drop(columns=['No', 'Point'])
-        df_edge.reset_index(drop=True, inplace=True)
+            if "Point" in df_edge_block.columns:
+                df_edge_block = df_edge_block[df_edge_block["Point"] == '"<Ave>"']
+            for c in ['No', 'Point']:
+                if c in df_edge_block.columns:
+                    df_edge_block = df_edge_block.drop(columns=c)
+            df_edge_block = df_edge_block.reset_index(drop=True)
 
-        df_temp = pd.concat([df_waferid, df_recipe, df_roundness, df_diameter, df_edge, df_notch], axis=1)
+            df_edge = df_edge_block if not df_edge_block.empty else pd.DataFrame()
+        except Exception:
+            pass
+
+
+        parts = [df_waferid, df_recipe]
+
+        for section in [df_roundness, df_diameter, df_edge, df_bevel, df_notch]:
+            if isinstance(section, pd.DataFrame) and not section.empty:
+                parts.append(section)
+
+        df_temp = pd.concat(parts, axis=1)
         return True, df_temp
     except:
         return False, ''
@@ -113,7 +135,7 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #         df = pd.read_fwf(filename)
 #         srs = df[list(df.columns)[0]]
 #         df_waferid = pd.DataFrame({'LOT_slot': [waferid]})
-# 
+
 #         # --- Recipe ---
 #         recipe_matches = [i for i in srs if '"Recipe Name:",' in i]
 #         if not recipe_matches:
@@ -123,7 +145,7 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #             recipe = recipe_raw[recipe_raw.index(',') + 1:].strip()
 #             recipe = recipe.strip('"')
 #         df_recipe = pd.DataFrame({'Recipe': [recipe]})
-# 
+
 #         # --- Diameter (uses line after "Dia","DiaB") ---
 #         df_diameter = pd.DataFrame({'Diameter': [None]})
 #         try:
@@ -133,7 +155,7 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #             df_diameter = pd.DataFrame({'Diameter': [diameter]})
 #         except Exception:
 #             pass
-# 
+
 #         # --- Edge (average row only) ---
 #         df_edge = pd.DataFrame()
 #         try:
@@ -142,10 +164,10 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #             df_edge_block.reset_index(drop=True, inplace=True)
 #             df_edge_block.rename(columns=df_edge_block.iloc[0], inplace=True)
 #             df_edge_block = df_edge_block.drop(0).reset_index(drop=True)
-# 
+
 #             # strip quotes in headers
 #             df_edge_block.columns = [c.replace('"', '') for c in df_edge_block.columns]
-# 
+
 #             # keep only average row; drop helper cols if present
 #             if "Point" in df_edge_block.columns:
 #                 df_edge_block = df_edge_block[df_edge_block["Point"] == '"<Ave>"']
@@ -153,12 +175,12 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #                 if c in df_edge_block.columns:
 #                     df_edge_block = df_edge_block.drop(columns=c)
 #             df_edge_block = df_edge_block.reset_index(drop=True)
-# 
+
 #             # If empty (no "<Ave>" found), keep as empty df with no columns
 #             df_edge = df_edge_block if not df_edge_block.empty else pd.DataFrame()
 #         except Exception:
 #             pass
-# 
+
 #         # --- Notch ---
 #         df_notch = pd.DataFrame()
 #         try:
@@ -171,7 +193,7 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #             df_notch = df_notch_block
 #         except Exception:
 #             pass
-# 
+
 #         # --- Bevel (if present) ---
 #         bevel_present = False
 #         df_bevel = pd.DataFrame()
@@ -186,7 +208,7 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #             bevel_present = True
 #         except Exception:
 #             bevel_present = False
-# 
+
 #         # --- Roundness (if present/derivable) ---
 #         # We primarily derive from "Max, Diff, Dir" & "Min, Diff, Dir" lines.
 #         roundness_present = False
@@ -210,7 +232,7 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #         except Exception:
 #             roundness_present = False
 #             df_roundness = pd.DataFrame()
-# 
+
 #         # --- Decide which concatenation to use ---
 #         # Case A: Roundness only (no Bevel)
 #         if roundness_present and not bevel_present:
@@ -223,7 +245,7 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #             if not df_notch.empty:
 #                 parts.append(df_notch)
 #             df_temp = pd.concat(parts, axis=1)
-# 
+
 #         # Case B: Bevel only (no Roundness)
 #         elif bevel_present and not roundness_present:
 #             parts = [df_waferid, df_recipe, df_diameter]
@@ -233,7 +255,7 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #             if not df_notch.empty:
 #                 parts.append(df_notch)
 #             df_temp = pd.concat(parts, axis=1)
-# 
+
 #         # Fallbacks (both present or neither found): include what we have, prefer Roundness first
 #         else:
 #             parts = [df_waferid, df_recipe]
@@ -247,9 +269,9 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
 #             if not df_notch.empty:
 #                 parts.append(df_notch)
 #             df_temp = pd.concat(parts, axis=1)
-# 
+
 #         return True, df_temp
-# 
+
 #     except Exception as e:
 #         # You can log e if needed
 #         return False, ''
