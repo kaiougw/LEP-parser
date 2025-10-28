@@ -23,7 +23,7 @@ import io
 # ↑讀取資料夾內所有檔案名稱然後放進all_file_name這個list裡
 
 # path為想要爬取檔案的所在資料夾完整路徑(D:\coding\LEP_offline_parser)，filename為檔案名稱(ex:POLYPR205.Csv)
-def parseoneLEPfile(filename):  # (path,filename):
+def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filename):
     # url=path+'/'+filename #url=完整檔案名稱=檔案路徑+檔案名稱
     # waferid=filename[:filename.index(".")] #抓取檔案名稱，因LEP檔案名稱為LOT+slot，所以直接抓檔案名稱即可作為wafer身分辨別
     # df=pd.read_fwf(url) #讀取檔案，存在名為df的變數中
@@ -34,12 +34,17 @@ def parseoneLEPfile(filename):  # (path,filename):
         srs = df[list(df.columns)[0]]  # 取出df的資料存為series
         df_waferid = pd.DataFrame({'LOT_slot': [waferid]})
 
-        recipe_raw = [i for i in srs if i.find('"Recipe Name:",') != -1]  # 找到recipe name
-        recipe_raw = recipe_raw[0]
-        recipe = recipe_raw[recipe_raw.index(',') + 1:]  # 找到,所在的index
-        recipe = recipe[1:-1]  # 去除"的字樣
-        df_recipe = pd.DataFrame({'Recipe': [recipe]})  # 將recipe資訊存成dataframe
+        # Recipe
+        recipe_matches = [i for i in srs if '"Recipe Name:",' in i] # 找到recipe name
+        if not recipe_matches:
+            recipe = ""
+        else:
+            recipe_raw = recipe_matches[0]
+            recipe = recipe_raw[recipe_raw.index(',') + 1:].strip() # 找到,所在的index; 
+            recipe = recipe.strip('"') # 去除"的字樣
+        df_recipe = pd.DataFrame({'Recipe': [recipe]}) # 將recipe資訊存成dataframe
 
+        # Diameter
         dia_index = srs.index[srs == '"Dia","DiaB"'] + 1  # 找到"Dia","DiaB"於series中的index number，將index number+1即為資料欄位
         diameter = list(srs[dia_index])[0][:list(srs[dia_index])[0].find(',')]  # 找到","於string中的index number
         df_diameter = pd.DataFrame({'Diameter': [diameter]})  # 將diameter完整資訊存成dataframe
@@ -97,11 +102,10 @@ def parseoneLEPfile(filename):  # (path,filename):
         df_edge.reset_index(drop=True, inplace=True)
 
         df_temp = pd.concat([df_waferid, df_recipe, df_roundness, df_diameter, df_edge, df_notch], axis=1)
-
-        df_temp = pd.concat([df_waferid, df_recipe, df_diameter, df_edge, df_bevel, df_notch], axis=1)
         return True, df_temp
     except:
         return False, ''
+
 
 # def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:
 #     try:
