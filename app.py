@@ -189,4 +189,4 @@ if parse_clicked:
                 mime="text/csv",
             )
 
-            st.caption("The file will be downloaded in the download folder.")
+            st.caption("The CSV file will be downloaded to the Downloads folder.")
