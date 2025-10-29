@@ -82,7 +82,7 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
             pass
 
         # Bevel
-        df_bevel = pd.DataFrame({'Bevel': [None]})
+        df_bevel = pd.DataFrame()
         try:
             bevel_index = srs.index[srs == '"[Bevel]"'][0] # find "[Bevel]" index.
             df_bevel_block = srs[bevel_index + 1:bevel_index + 3].str.split(',', expand=True) # take two lines after the header and split by commas
