@@ -151,10 +151,10 @@ def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
 
         os.remove(tmp_path)
 
-        # if TorF and isinstance(df_temp, pd.DataFrame):  # proceed if parsing was successful (TorF=True) and df_temp is a DataFrame
-        #     original_name = os.path.basename(uf.name)
-        #     df_temp["LOT_slot"] = original_name  # new column with original file name
-        #     results.append(df_temp)
+        if TorF and isinstance(df_temp, pd.DataFrame):  # proceed if parsing was successful (TorF=True) and df_temp is a DataFrame
+            original_name = os.path.basename(uf.name)
+            df_temp["LOT_slot"] = original_name  # new column with original file name
+            results.append(df_temp)
 
     if not results:
         return pd.DataFrame()
