@@ -119,8 +119,8 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
         for section in [df_roundness, df_diameter, df_edge, df_bevel, df_notch]: # for each section, append only if it has content
             if isinstance(section, pd.DataFrame) and not section.empty:
                 parts.append(section)
-        df_temp = pd.concat(parts, axis=1) # column-wise concatenation
-        return True, df_temp
+        # df_temp = pd.concat(parts, axis=1) # column-wise concatenation
+        return True, parts
     except:
         return False, ''
 
@@ -178,7 +178,7 @@ if parse_clicked:
         if df_summary.empty:
             st.error("Parsing failed. Please check the files.")
         else:
-            st.success("Done parsing. Pleaes preview and download below.")
+            st.success("Done parsing. Please preview and download below.")
             st.dataframe(df_summary, use_container_width=True)
 
             csv_bytes = df_summary.to_csv(index=False).encode("utf-8")
@@ -188,5 +188,4 @@ if parse_clicked:
                 file_name="lep.csv",
                 mime="text/csv",
             )
-
             st.caption("The CSV file will be downloaded to the Downloads folder.")
