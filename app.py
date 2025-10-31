@@ -119,8 +119,8 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
         for section in [df_roundness, df_diameter, df_edge, df_bevel, df_notch]: # for each section, append only if it has content
             if isinstance(section, pd.DataFrame) and not section.empty:
                 parts.append(section)
-        # df_temp = pd.concat(parts, axis=1) # column-wise concatenation
-        return True, parts
+        df_temp = pd.concat(parts, axis=1) # column-wise concatenation
+        return True, df_temp
     except:
         return False, ''
 
