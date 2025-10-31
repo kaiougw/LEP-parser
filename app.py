@@ -130,7 +130,7 @@ st.title("LEP Parser")
 
 uploaded_files = st.file_uploader("Choose CSV files (.csv)", type=["csv"], accept_multiple_files=True)
 
-parse_clicked = st.button("Parse", type="Primary")
+parse_clicked = st.button("Parse", type="primary")
 
 
 def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
