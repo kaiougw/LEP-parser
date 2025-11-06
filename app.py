@@ -28,10 +28,13 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
     # waferid=filename[:filename.index(".")] #抓取檔案名稱，因LEP檔案名稱為LOT+slot，所以直接抓檔案名稱即可作為wafer身分辨別
     # df=pd.read_fwf(url) #讀取檔案，存在名為df的變數中
     # print(filename)
+    """
+    Loop through the first column of the file and try to extract Recipe, Diameter, Roundness, Notch, Bevel, and Edge data.
+    """
     try:
         waferid = os.path.basename(filename)
         df = pd.read_fwf(filename)  # 讀取檔案，存在名為df的變數中
-        srs = df[list(df.columns)[0]]  # 取出df的資料存為series; dataframe of first column
+        srs = df[list(df.columns)[0]]  # 取出df的資料存為series
         df_waferid = pd.DataFrame({'LOT_slot': [waferid]})
 
         # Recipe
@@ -120,9 +123,9 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
             if isinstance(section, pd.DataFrame) and not section.empty:
                 parts.append(section)
         df_temp = pd.concat(parts, axis=1) # column-wise concatenation
-        return True, df_temp
+        return df_temp
     except:
-        return False, ''
+        return ''
 
 
 st.set_page_config(page_title="LEP Parser", layout="wide")
@@ -147,11 +150,11 @@ def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
             tmp_path = tmp.name
 
         st.write(f"{os.path.basename(uf.name)}")  # display file name
-        TorF, df_temp = parseoneLEPfile(tmp_path)
+        df_temp = parseoneLEPfile(tmp_path)
 
         os.remove(tmp_path)
 
-        if TorF and isinstance(df_temp, pd.DataFrame):  # proceed if parsing was successful (TorF=True) and df_temp is a DataFrame
+        if isinstance(df_temp, pd.DataFrame):  # proceed if parsing was successful; df_temp is a DataFrame
             original_name = os.path.basename(uf.name)
             df_temp["LOT_slot"] = original_name  # new column with original file name
             results.append(df_temp)
@@ -161,7 +164,7 @@ def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
 
     df_summary = pd.concat(results, ignore_index=True)
 
-    # Convert each column to numeric where possible; keep text as-is otherwise
+    # Convert each column to numeric where possible; ignore and keep text as-is otherwise
     for col in df_summary.columns:
         df_summary[col] = pd.to_numeric(df_summary[col], errors="ignore")
 
