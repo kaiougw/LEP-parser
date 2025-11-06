@@ -123,9 +123,9 @@ def parseoneLEPfile(filename) -> tuple[bool, pd.DataFrame | str]:  # (path,filen
             if isinstance(section, pd.DataFrame) and not section.empty:
                 parts.append(section)
         df_temp = pd.concat(parts, axis=1) # column-wise concatenation
-        return df_temp
+        return True, df_temp
     except:
-        return ''
+        return False, ''
 
 
 st.set_page_config(page_title="LEP Parser", layout="wide")
@@ -150,11 +150,11 @@ def process_files(files: List[io.BytesIO]) -> pd.DataFrame:
             tmp_path = tmp.name
 
         st.write(f"{os.path.basename(uf.name)}")  # display file name
-        df_temp = parseoneLEPfile(tmp_path)
+        TorF, df_temp = parseoneLEPfile(tmp_path)
 
         os.remove(tmp_path)
 
-        if isinstance(df_temp, pd.DataFrame):  # proceed if parsing was successful; df_temp is a DataFrame
+        if TorF and isinstance(df_temp, pd.DataFrame):  # proceed if parsing was successful (TorF=True) and df_temp is a DataFrame
             original_name = os.path.basename(uf.name)
             df_temp["LOT_slot"] = original_name  # new column with original file name
             results.append(df_temp)
